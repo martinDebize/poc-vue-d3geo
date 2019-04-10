@@ -1,5 +1,6 @@
 <script>
 const d3 = {
+  ...require('d3'),
   ...require('d3-geo'),
   ...require('d3-tile'),
   ...require('d3-selection')
@@ -85,13 +86,24 @@ export default {
       scale: 1 << +this.initialZoom,
     };
   },
-  mounted () {
-    const rect = this.$el.getBoundingClientRect();
-
-    this.width = rect.width;
-    this.height = rect.height;
+  async mounted () {
     this.translateX = this.width / 2;
     this.translateY = this.height / 2;
+
+    const svg = d3.select("svg"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+
+    const data = await d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson");
+    // Draw the map
+    svg.append('g').selectAll("path")
+      .data(data.features)
+      .enter().append("path")
+        .attr("fill", "#69b3a2")
+        .attr("d", d3.geoPath()
+            .projection(this.projection)
+        )
+        .style("stroke", "#fff");
   },
   render () {
     return (
@@ -115,19 +127,6 @@ export default {
           onMouseup={this.onTouchEnd}
           onMouseleave={this.onTouchEnd}
         >
-          <g>
-            {this.tiles.map(t => (
-              <image
-                key={`${t.x}_${t.y}_${t.z}`}
-                class="map__tile"
-                xlinkHref={`https://a.tile.openstreetmap.org/${t.z}/${t.x}/${t.y}.png `}
-                x={(t.x + this.tiles.translate[0]) * this.tiles.scale}
-                y={(t.y + this.tiles.translate[1]) * this.tiles.scale}
-                width={this.tiles.scale}
-                height={this.tiles.scale}
-              />
-            ))}
-          </g>
         </svg>
       </div>
     )
